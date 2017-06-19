@@ -15,12 +15,6 @@ repos:
   # - [ Alamofire, Alamofire iOS ] or - [ Alamofire, Alamofire iOS, 4.0.0 ]
 ```
 # Installtion
-manual
-```
-git clone git@github.com:CodeEagle/RocketBoot.git
-cd RocketBoot && make install
-```
-
 homebrew
 ```
 brew tap codeeagle/rocketboot
