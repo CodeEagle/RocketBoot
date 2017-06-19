@@ -20,6 +20,12 @@ repos:
 git clone git@github.com:CodeEagle/RocketBoot.git
 cd RocketBoot && make install
 ```
+
+# Usage
+when done running  `rocketboot`,  a folder  `RocketBoot` is generated
+
+Integrated  `RocketBoot/RocketBoot.xcconfig`  to your project
+
 # Tests
 ```
   make test
