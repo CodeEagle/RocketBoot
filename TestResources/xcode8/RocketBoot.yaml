@@ -1,0 +1,5 @@
+tool: punic
+xcode9: false
+repos:
+#  xcodeproj Name; Scheme Name;
+   - [ Alamofire, Alamofire iOS ]

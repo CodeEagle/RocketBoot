@@ -1,0 +1,5 @@
+tool: carthage
+xcode9: true
+repos:
+#  xcodeproj Name; Scheme Name;
+   - [ Alamofire, Alamofire iOS ]

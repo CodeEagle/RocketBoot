@@ -1,0 +1,5 @@
+tool: punic
+xcode9: true
+repos:
+#  xcodeproj Name; Scheme Name;
+   - [ Dwifft, Dwifft ]
