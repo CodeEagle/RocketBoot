@@ -207,7 +207,8 @@ public final class RocketBoot {
                         })
                         arch.add(lines: oFiles, to: &_archLine)
                     } catch {
-                        RocketLog.error("folder:\(folder), \(error.localizedDescription)")
+//                        RocketLog.error("folder:\(folder), \(error.localizedDescription)")
+                        continue
                     }
                 }
             }
