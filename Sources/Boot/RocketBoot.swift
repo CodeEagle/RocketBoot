@@ -225,7 +225,8 @@ public final class RocketBoot {
         total += "LD_RUNPATH_SEARCH_PATHS = $(inherited) @loader_path/Frameworks\n"
         let output = _relativeOutput ?? "RocketBoot"
         for arch in archs {
-            if _archLine[arch]?.count == 0 { continue }
+            let count = _archLine[arch]?.count ?? 0
+            guard count != 0 else { continue }
             let archRaw = arch.rawValue
             total += "OTHER_LDFLAGS[arch=\(archRaw)] = $(inherited) -filelist $(SRCROOT)/\(output)/\(archRaw).filelist\n"
         }
