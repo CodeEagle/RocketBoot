@@ -32,6 +32,6 @@ xcode:
 	swift package generate-xcodeproj
 install: release
 	mkdir -p $(PREFIX)/bin
-	rm /usr/local/bin/rocketboot
+	if [ -f "/usr/local/bin/rocketboot" ]; then rm /usr/local/bin/rocketboot; fi
 	cp -f $(RELEASE_BINARY_FOLDER) $(PREFIX)/bin/$(BINARY)
 	rocketboot help
