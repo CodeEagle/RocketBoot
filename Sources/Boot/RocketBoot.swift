@@ -111,7 +111,8 @@ public final class RocketBoot {
         case arm64, armv7, i386, x86_64
         func add(lines: [String], to map: inout [Arch: [String]]) {
             var pool = map[self] ?? []
-            pool.append(contentsOf: lines)
+            let filters = lines.filter({ pool.contains($0) == false })
+            pool.append(contentsOf: filters)
             map[self] = pool
         }
 
