@@ -10,18 +10,18 @@ import Yaml
 import Foundation
 
 public final class RocketBoot {
-
+    public enum Platform: String { case iOS, Mac }
     private static var _user: String = ""
     private static var _isXcode9 = true
     private static var _tool: ToolType = .punic
-
+    private static var _platform: Platform = .iOS
     public enum ToolType: String {
         case carthage
         case punic
 
         func archPath(for repo: Repository) -> [Arch: [String]] {
             var result: [Arch: [String]] = [:]
-            let modes: [ReleaseMode] = [.iPhoneos, .iPhonesimulator]
+            let modes: [ReleaseMode] = RocketBoot._platform == .iOS ? [.iPhoneos, .iPhonesimulator] : [.Mac]
             if self == .punic {
                 let intermediates = "\(basePath)/Intermediates\(RocketBoot._isXcode9 ? ".noindex" : "")"
                 for mode in modes {
@@ -94,13 +94,15 @@ public final class RocketBoot {
         }
     }
 
-    static let version = "0.0.1"
+    static let version = "0.0.2"
 
     public enum ReleaseMode: String {
+        case Mac = "Release"
         case iPhoneos = "Release-iphoneos"
         case iPhonesimulator = "Release-iphonesimulator"
         var availableArch: [Arch] {
             switch self {
+            case .Mac: return [.x86_64]
             case .iPhoneos: return [.arm64, .armv7]
             case .iPhonesimulator: return [.i386, .x86_64]
             }
@@ -155,6 +157,14 @@ public final class RocketBoot {
             RocketBoot._user = ProcessInfo.processInfo.environment["USER"]!
             if let xcode9 = dict["xcode9"].bool {
                 RocketBoot._isXcode9 = xcode9
+            }
+            if let value = dict["platform"].string {
+                if let platform = Platform(rawValue: value) {
+                    RocketBoot._platform = platform
+                } else {
+                    RocketLog.error("Not Supported Platform:\(value), using iOS / Mac")
+                    exit(0)
+                }
             }
             guard let toolraw = dict["tool"].string?.lowercased() else {
                 RocketLog.error("Not config tool")
@@ -222,7 +232,7 @@ public final class RocketBoot {
 
     private func generateXcconfig() {
         let archs: [Arch] = [.arm64, .armv7, .i386, .x86_64]
-        var total = "FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Carthage/Build/iOS\n"
+        var total = "FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Carthage/Build/\(RocketBoot._platform.rawValue)\n"
         total += "LD_RUNPATH_SEARCH_PATHS = $(inherited) @loader_path/Frameworks\n"
         let output = _relativeOutput ?? "RocketBoot"
         for arch in archs {
@@ -251,6 +261,7 @@ public final class RocketBoot {
         let raw = """
         tool: punic # carthage or punic, default is punic
         xcode9: true # true or false, default is true
+        platform: iOS # or Mac
         repos:
         #  xcodeproj Name; Scheme Name; Optional Tag, if using carthage and not setting tag, will using the latest tag build;
         # - [ Alamofire, Alamofire iOS ] or - [ Alamofire, Alamofire iOS, 4.0.0 ]
