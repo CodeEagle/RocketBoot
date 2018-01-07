@@ -241,7 +241,6 @@ public final class RocketBoot {
             for (arch, folders) in folder {
                 for folder in folders {
                     do {
-                        RocketLog.debug("searching folder:\(folder)")
                         let oFiles = try fm.contentsOfDirectory(atPath: folder).flatMap({ (file) -> String? in
                             if file.hasSuffix(".o") { return folder.appendingPathComponent(file) }
                             return nil
