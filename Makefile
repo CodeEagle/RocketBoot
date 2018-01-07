@@ -1,6 +1,7 @@
 BINARY?=rocketboot
 BUILD_FOLDER?=.build
 ROOT?=$(PWD)
+RELEASE_FOLDER?=release
 TESTS_RESOURCES_EMPTY_FOLDER?=TestResources/empty
 TESTS_RESOURCES_EMPTY_REPO_FOLDER?=TestResources/emptyrepo
 TESTS_RESOURCES_NO_REPO_FOLDER?=TestResources/norepo
@@ -15,6 +16,7 @@ RELEASE_BINARY_FOLDER?=$(BUILD_FOLDER)/release/$(PROJECT)
 
 release:
 	swift build -c release -Xswiftc -static-stdlib
+	cp -f $(RELEASE_BINARY_FOLDER) $(RELEASE_FOLDER)
 build:
 	swift build
 test: build
