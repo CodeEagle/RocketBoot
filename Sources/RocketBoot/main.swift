@@ -1,7 +1,7 @@
 import Foundation
 import Boot
 func main() {
-
+    
     guard let currnetFolder = ProcessInfo.processInfo.environment["PWD"] else { return }
     let target = "RocketBoot.yaml"
     if CommandLine.argc < 2 {

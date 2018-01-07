@@ -35,3 +35,4 @@ install: release
 	if [ -f "/usr/local/bin/rocketboot" ]; then rm /usr/local/bin/rocketboot; fi
 	cp -f $(RELEASE_BINARY_FOLDER) $(PREFIX)/bin/$(BINARY)
 	rocketboot help
+.PHONY: release

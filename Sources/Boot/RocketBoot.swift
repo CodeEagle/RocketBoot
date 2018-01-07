@@ -33,7 +33,19 @@ public final class RocketBoot {
                     }
                 }
             } else if self == .carthage {
-                let base = "\(basePath)/DerivedData/\(repo.xcproject)"
+                
+                var base = "\(basePath)/DerivedData/\(repo.xcproject)"
+                var usingNewBase = false
+                if FileManager.default.fileExists(atPath: base) == false {
+                    do {
+                        let xcodeVersionBuild = try RocketBoot.xcodeVertionBuild()
+                        base = "\(basePath)/DerivedData/\(xcodeVersionBuild)/\(repo.xcproject)"
+                        usingNewBase = true
+                    } catch {
+                        RocketLog.error("wtf:\(error)")
+                    }
+                    
+                }
                 let intermediates = "Intermediates\(RocketBoot._isXcode9 ? ".noindex" : "")"
                 do {
                     var tags = try FileManager.default.contentsOfDirectory(atPath: base)
@@ -52,13 +64,26 @@ public final class RocketBoot {
                             }
                         }
                         RocketLog.info("using tag <\(latest)> for [\(repo.scheme)] within \(tags)")
-                        let tagPath = "\(base)/\(latest)/Build/\(intermediates)/\(repo.xcproject).build/"
+                        var tagPath = "\(base)/\(latest)/Build/\(intermediates)/\(repo.xcproject).build/"
+                        let simulaterPath = tagPath
+                        if usingNewBase {
+                            tagPath = "\(base)/\(latest)/Build/\(intermediates)/ArchiveIntermediates/\(repo.scheme)/IntermediateBuildFilesPath/\(repo.xcproject).build/"
+                        }
                         for mode in modes {
                             let archs = mode.availableArch
                             for arch in archs {
                                 var old = result[arch] ?? []
-                                old.append("\(tagPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)")
-                                result[arch] = old
+                                let pathToAdd = "\(tagPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
+                                if arch == .i386 || arch == .x86_64 {
+                                    if FileManager.default.fileExists(atPath: pathToAdd) == false {
+                                        let pathToAdd = "\(simulaterPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
+                                        old.append(pathToAdd)
+                                        result[arch] = old
+                                    }
+                                } else {
+                                    old.append(pathToAdd)
+                                    result[arch] = old
+                                }
                             }
                         }
                     }
@@ -78,6 +103,9 @@ public final class RocketBoot {
             }
             return ""
         }
+        
+       
+        
     }
 
     public enum Command: String {
@@ -148,6 +176,7 @@ public final class RocketBoot {
     private var _relativeOutput: String?
     public init?(configFile path: String) {
         do {
+            
             _rootPath = (path as NSString).deletingLastPathComponent
             _outputFolder = _rootPath.appendingPathComponent("RocketBoot")
             RocketLog.info("working in:\(_rootPath)")
@@ -212,6 +241,7 @@ public final class RocketBoot {
             for (arch, folders) in folder {
                 for folder in folders {
                     do {
+                        RocketLog.debug("searching folder:\(folder)")
                         let oFiles = try fm.contentsOfDirectory(atPath: folder).flatMap({ (file) -> String? in
                             if file.hasSuffix(".o") { return folder.appendingPathComponent(file) }
                             return nil
@@ -270,6 +300,42 @@ public final class RocketBoot {
         let url = URL(fileURLWithPath: path)
         try? raw.data(using: .utf8)?.write(to: url)
         RocketLog.info("🍻 RocketBoot init done")
+    }
+    
+    static func xcodeSelectPath() throws ->  String {
+        let task:Process = Process()
+        let pipe:Pipe = Pipe()
+        
+        task.launchPath = "/usr/bin/xcode-select"
+        task.arguments = ["-p"]
+        task.standardOutput = pipe
+        task.environment = ProcessInfo.processInfo.environment
+        task.launch()
+        task.waitUntilExit()
+        
+        let handle = pipe.fileHandleForReading
+        let data = handle.readDataToEndOfFile()
+        guard let result_s = String(data: data, encoding: .utf8) else {
+            throw NSError(domain: "com.selfstudio.rocketboot", code: 1, userInfo: ["desc" : "no value from xcode-select -p"]) as Error
+        }
+        return result_s
+    }
+    
+    static func xcodeVertionBuild() throws -> String {
+        do {
+            let path = (try xcodeSelectPath() as NSString).deletingLastPathComponent
+            let versionPlist = "\(path)/version.plist"
+            let url = URL(fileURLWithPath: versionPlist)
+            let json = NSDictionary(contentsOf: url)
+            guard let version = json?["CFBundleShortVersionString"] as? String,
+                let build = json?["ProductBuildVersion"] as? String else {
+                   throw NSError(domain: "com.selfstudio.rocketboot", code: 2, userInfo: ["desc" : "no version/build from \(versionPlist)"]) as Error
+            }
+            return "\(version)_\(build)"
+        } catch {
+            throw error
+        }
+        
     }
 }
 
