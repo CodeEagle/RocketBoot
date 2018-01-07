@@ -39,7 +39,7 @@ public final class RocketBoot {
                 if FileManager.default.fileExists(atPath: base) == false {
                     do {
                         let xcodeVersionBuild = try RocketBoot.xcodeVertionBuild()
-                        base = "\(basePath)/DerivedData/\(xcodeVersionBuild)/\(repo.xcproject)"
+                        base = "\(basePath)/DerivedData/\(xcodeVersionBuild)/\(repo.project)"
                         usingNewBase = true
                     } catch {
                         RocketLog.error("wtf:\(error)")
@@ -64,22 +64,25 @@ public final class RocketBoot {
                             }
                         }
                         RocketLog.info("using tag <\(latest)> for [\(repo.scheme)] within \(tags)")
-                        var tagPath = "\(base)/\(latest)/Build/\(intermediates)/\(repo.xcproject).build/"
+                        var tagPath = "\(base)/\(latest)/Build/\(intermediates)/\(repo.xcproject).build"
+                        var optionTagPath = tagPath
                         let simulaterPath = tagPath
                         if usingNewBase {
-                            tagPath = "\(base)/\(latest)/Build/\(intermediates)/ArchiveIntermediates/\(repo.scheme)/IntermediateBuildFilesPath/\(repo.xcproject).build/"
+                            tagPath = "\(base)/\(latest)/Build/\(intermediates)/ArchiveIntermediates/\(repo.xcproject)/IntermediateBuildFilesPath/\(repo.xcproject).build"
+                            optionTagPath = "\(base)/\(latest)/Build/\(intermediates)/ArchiveIntermediates/\(repo.scheme)/IntermediateBuildFilesPath/\(repo.xcproject).build"
                         }
                         for mode in modes {
                             let archs = mode.availableArch
                             for arch in archs {
                                 var old = result[arch] ?? []
-                                let pathToAdd = "\(tagPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
-                                if arch == .i386 || arch == .x86_64 {
-                                    if FileManager.default.fileExists(atPath: pathToAdd) == false {
-                                        let pathToAdd = "\(simulaterPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
-                                        old.append(pathToAdd)
-                                        result[arch] = old
-                                    }
+                                var pathToAdd = "\(tagPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
+                                if FileManager.default.fileExists(atPath: pathToAdd) == false, usingNewBase {
+                                    pathToAdd = "\(optionTagPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
+                                }
+                                if mode == .iPhonesimulator, usingNewBase {
+                                    let pathToAdd = "\(simulaterPath)/\(mode.rawValue)/\(repo.scheme).build/\(arch.path)"
+                                    old.append(pathToAdd)
+                                    result[arch] = old
                                 } else {
                                     old.append(pathToAdd)
                                     result[arch] = old
@@ -247,7 +250,7 @@ public final class RocketBoot {
                         })
                         arch.add(lines: oFiles, to: &_archLine)
                     } catch {
-//                        RocketLog.error("folder:\(folder), \(error.localizedDescription)")
+                        RocketLog.error("folder:\(folder), \(error.localizedDescription)")
                         continue
                     }
                 }
@@ -292,8 +295,8 @@ public final class RocketBoot {
         xcode9: true # true or false, default is true
         platform: iOS # or Mac
         repos:
-        #  xcodeproj Name; Scheme Name; Optional Tag, if using carthage and not setting tag, will using the latest tag build;
-        # - [ Alamofire, Alamofire iOS ] or - [ Alamofire, Alamofire iOS, 4.0.0 ]
+        # project name, last path component of your repo url, such as git@github.com:realm/realm-cocoa.git, realm-cocoa is project name; xcodeproj Name; Scheme Name; Optional Tag, if using carthage and not setting tag, will using the latest tag build;
+        # - [ realm-cocoa, Realm, RealmSwift ] or - [ realm-cocoa, Realm, RealmSwift, v1.0.6 ]
         """
         let path = currnetFolder.appendingPathComponent("RocketBoot.yaml")
         let url = URL(fileURLWithPath: path)
@@ -339,18 +342,20 @@ public final class RocketBoot {
 }
 
 public struct Repository {
+    public let project: String
     public let xcproject: String
     public let scheme: String
     public let tag: String?
 
     public init?(items: [Yaml]) {
-        guard let xcproject_ = items[safe: 0]?.string, let scheme_ = items[safe: 1]?.string else {
+        guard let project_ = items[safe: 0]?.string, let xcproject_ = items[safe: 1]?.string, let scheme_ = items[safe: 2]?.string else {
             print("bad format:\(items)")
             return nil
         }
+        project = project_
         xcproject = xcproject_
         scheme = scheme_
-        tag = items[safe: 2]?.string
+        tag = items[safe: 3]?.string
     }
 }
 
